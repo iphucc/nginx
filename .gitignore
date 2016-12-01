@@ -1,0 +1,15 @@
+mbuild
+configure
+Makefile
+README
+LICENSE
+html/
+man/
+objs/
+cmake-build-debug/
+
+testDir/
+
+## ignore nginx 3rd party modules
+src/*-3rd
+src/m3rd-*
