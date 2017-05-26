@@ -879,7 +879,7 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
     case NGX_HTTP_CACHE_STALE:
 
         if (((u->conf->cache_use_stale & NGX_HTTP_UPSTREAM_FT_UPDATING)
-             || c->stale_updating) && !r->cache_updater
+             || c->stale_updating) && !r->background
             && u->conf->cache_background_update)
         {
             r->cache->background = 1;
@@ -892,7 +892,7 @@ ngx_http_upstream_cache(ngx_http_request_t *r, ngx_http_upstream_t *u)
     case NGX_HTTP_CACHE_UPDATING:
 
         if (((u->conf->cache_use_stale & NGX_HTTP_UPSTREAM_FT_UPDATING)
-             || c->stale_updating) && !r->cache_updater)
+             || c->stale_updating) && !r->background)
         {
             u->cache_status = rc;
             rc = NGX_OK;
@@ -1076,14 +1076,14 @@ ngx_http_upstream_cache_background_update(ngx_http_request_t *r,
     }
 
     if (ngx_http_subrequest(r, &r->uri, &r->args, &sr, NULL,
-                            NGX_HTTP_SUBREQUEST_CLONE)
+                            NGX_HTTP_SUBREQUEST_CLONE
+                            |NGX_HTTP_SUBREQUEST_BACKGROUND)
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
     sr->header_only = 1;
-    sr->cache_updater = 1;
 
     return NGX_OK;
 }
@@ -4897,17 +4897,18 @@ ngx_http_upstream_copy_multi_header_lines(ngx_http_request_t *r,
         }
     }
 
-    ph = ngx_array_push(pa);
-    if (ph == NULL) {
-        return NGX_ERROR;
-    }
-
     ho = ngx_list_push(&r->headers_out.headers);
     if (ho == NULL) {
         return NGX_ERROR;
     }
 
     *ho = *h;
+
+    ph = ngx_array_push(pa);
+    if (ph == NULL) {
+        return NGX_ERROR;
+    }
+
     *ph = ho;
 
     return NGX_OK;
