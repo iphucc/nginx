@@ -1077,6 +1077,10 @@ ngx_http_upstream_cache_background_update(ngx_http_request_t *r,
         return NGX_OK;
     }
 
+    if (r == r->main) {
+        r->preserve_body = 1;
+    }
+
     if (ngx_http_subrequest(r, &r->uri, &r->args, &sr, NULL,
                             NGX_HTTP_SUBREQUEST_CLONE
                             |NGX_HTTP_SUBREQUEST_BACKGROUND)
@@ -2857,7 +2861,9 @@ ngx_http_upstream_send_response(ngx_http_request_t *r, ngx_http_upstream_t *u)
         u->pipe->downstream_error = 1;
     }
 
-    if (r->request_body && r->request_body->temp_file) {
+    if (r->request_body && r->request_body->temp_file
+        && r == r->main && !r->preserve_body)
+    {
         ngx_pool_run_cleanup_file(r->pool, r->request_body->temp_file->file.fd);
         r->request_body->temp_file->file.fd = NGX_INVALID_FILE;
     }
@@ -4503,7 +4509,7 @@ ngx_http_upstream_process_cache_control(ngx_http_request_t *r,
             }
 
             if (*p >= '0' && *p <= '9') {
-                n = n * 10 + *p - '0';
+                n = n * 10 + (*p - '0');
                 continue;
             }
 
@@ -4531,7 +4537,7 @@ ngx_http_upstream_process_cache_control(ngx_http_request_t *r,
             }
 
             if (*p >= '0' && *p <= '9') {
-                n = n * 10 + *p - '0';
+                n = n * 10 + (*p - '0');
                 continue;
             }
 
@@ -4554,7 +4560,7 @@ ngx_http_upstream_process_cache_control(ngx_http_request_t *r,
             }
 
             if (*p >= '0' && *p <= '9') {
-                n = n * 10 + *p - '0';
+                n = n * 10 + (*p - '0');
                 continue;
             }
 
